@@ -75,7 +75,7 @@ class Packetizer:
         "Format status packet"
         flags = Packetizer.HEADER_STATUS
         now = time()
-        dgram = flags + struct.pack('dIHBBHH',
+        dgram = flags + struct.pack('!dIHBBHH',
                                     now,
                                     chunk_no,
                                     self.audio_config.rate,
