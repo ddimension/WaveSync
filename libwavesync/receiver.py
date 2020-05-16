@@ -75,7 +75,7 @@ class Receiver(asyncio.DatagramProtocol):
          rate, sample,
          channels,
          chunk_size,
-         latency_ms) = struct.unpack('dIHBBHH',
+         latency_ms) = struct.unpack('!dIHBBHH',
                                      data[2:2 + 8+4+2+1+1+2+2])
 
         q = self.chunk_queue
