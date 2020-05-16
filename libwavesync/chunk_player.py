@@ -173,18 +173,14 @@ class ChunkPlayer:
         self.prev_callback = now
         self.cb_periods.append(diff)
         self.cb_periods = self.cb_periods[-5:]
-        print(f": t={now:9.2f} d={1000*diff:5.2f}ms: Player callback called")
-        print(f":   current error={1000*e:.2f}")
         avg = sum(self.cb_periods) / len(self.cb_periods)
         err = abs(diff - avg) # sum(abs(avg - v) for v in self.cb_periods)
-        print(f":   periods: avg={avg} e={err}")
-        print(f":   buf_time={1000*self.audio_output.buffer_time:.2f}")
 
         if data is None:
             print(": Playing silence")
             return self.audio_output.silent_buffer
         else:
-            print(": Playing chunk", len(data))
+            #print(": Playing chunk", len(data))
             return data
 
     async def initial_sync(self, play_time):
@@ -211,7 +207,7 @@ class ChunkPlayer:
             # will be stable.
             delay = play_time - mark + self.audio_output.config.sink_latency_s
             # delay = play_time - mark + self.residual_frames_count * frame_time # TODO: Maybe?
-            print(f"  CHUNK PLAY DELAY IS {1000*delay:.2f}ms tol {1000*self.tolerance_s:.2f}")
+            #print(f"  CHUNK PLAY DELAY IS {1000*delay:.2f}ms tol {1000*self.tolerance_s:.2f}")
 
             if delay > 3 * self.tolerance_s and self.initial_recovery is False:
                 print(f"  ** RECOV INIT: delay={1000*delay}ms is > 3*tolerance")
@@ -248,10 +244,6 @@ class ChunkPlayer:
         # Start with residual frames
         chunks = [self.residual_frames]
 
-        print(f"c2b: Preparing chunk buffer chunk_frames={chunk_frames} "
-              f"frame_size={frame_size} to_go={self.buffer_size}")
-
-        print("  c2b: Start residual", self.residual_frames_count)
 
         self.residual_frames = b""
         self.residual_frames_count = 0
@@ -281,16 +273,12 @@ class ChunkPlayer:
                 play_frames, self.residual_frames = chunk[:cut], chunk[cut:]
                 self.residual_frames_count = chunk_frames - frames_to_go # len(self.residual_frames) // frame_size
                 chunks.append(play_frames)
-                print(f"  c2b: add partial chunk size={len(chunk)} cut={cut} to_go={frames_to_go} "
-                      f" play/residual={len(play_frames)}/{len(self.residual_frames)}")
                 frames_to_go = 0
             else:
-                print(f"  c2b: Add full chunk, to_go={frames_to_go} q={len(self.chunk_queue.chunk_list)}")
                 frames_to_go -= chunk_frames
                 chunks.append(chunk)
 
         next_buffer = b"".join(chunks)
-        print(f"  c2b: NEXT IS {len(next_buffer)}")
         return mark, next_buffer
 
 
@@ -328,19 +316,13 @@ class ChunkPlayer:
             # - This can allow PID like approach to synchro.
 
             if self.next_buffer is not None:
-                print("Waiting until next buffer is consumed")
                 await asyncio.sleep(5 * self.audio_output.config.chunk_time)
                 continue
 
-            print()
-            print()
-            print()
-            print("Building buffer: Initial sync")
             silence = await self.initial_sync(play_time=self.next_period)
 
             last_mark, self.next_buffer = await self.chunks_to_buffer(silence)
 
-            print("Chunk buf DONE")
 
 
         print("- Finishing chunk player")
