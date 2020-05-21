@@ -32,6 +32,8 @@ class Packetizer:
 
     def create_socket(self, channels, ttl, multicast_loop, broadcast, source_address=None):
         "Create a UDP multicast socket"
+        self.source_address = source_address
+
         self.sock = socket.socket(socket.AF_INET,
                                   socket.SOCK_DGRAM,
                                   socket.IPPROTO_UDP)
@@ -70,6 +72,47 @@ class Packetizer:
         # Set DF flag on IP packet (Don't Fragment) - fragmenting would be bad idea
         # it's way better to chunk the packets right.
         self.sock.setsockopt(socket.IPPROTO_IP, IP_MTU_DISCOVER, IP_PMTUDISC_DO)
+
+    def add_channel(self, channel):
+        "Add a channel at runtime"
+        if channel  in self.destinations:
+            return False
+        address, port = channel
+        if self.source_address and ipaddress.IPv4Address(address).is_multicast:
+            try:
+                self.sock.setsockopt(socket.SOL_IP,
+                                     socket.IP_MULTICAST_IF,
+                                     socket.inet_aton(source_address))
+                print("added membership, interface source address: %s, group: %s" % (source_address, address))
+                self.sock.setsockopt(socket.SOL_IP,
+                                     socket.IP_ADD_MEMBERSHIP,
+                                     socket.inet_aton(address) + socket.inet_aton(source_address))
+            except:
+                print("failed to add membership, interface source address: %s, group: %s. This is ok for unicast." % (source_address, address))
+
+        self.destinations.append( channel )
+        return True
+
+    def remove_channel(self, channel):
+        "Remove a channel at runtime"
+        if channel not in self.destinations:
+            return False
+
+        self.destinations.remove(channel)
+        address, port = channel
+        if self.source_address and ipaddress.IPv4Address(address).is_multicast:
+            try:
+                self.sock.setsockopt(socket.SOL_IP,
+                                     socket.IP_DROP_MEMBERSHIP,
+                                     socket.inet_aton(address) + socket.inet_aton(source_address))
+            except:
+                print("failed to remove membership, interface source address: %s, group: %s. This is ok for unicast." % (source_address, address))
+
+        return True
+
+    def get_channels(self):
+        "Get channel list"
+        return self.destinations
 
     def _create_status_packet(self, chunk_no):
         "Format status packet"
