@@ -22,7 +22,8 @@ from . import (
     ChunkQueue,
     SampleReader,
     Receiver,
-    Stats
+    Stats,
+    WebServer
 )
 
 from .cli_args import parse
@@ -30,6 +31,8 @@ from .cli_args import parse
 
 def start_tx(args, loop):
     "Initialize sender"
+
+
 
     # Transmitted configuration
     audio_config = AudioConfig(rate=args.audio_rate,
@@ -66,6 +69,9 @@ def start_tx(args, loop):
                              args.multicast_loop,
                              args.broadcast,
                              args.source_address)
+
+    print("Start webserver")
+    webserver = WebServer(packetizer, 1)
 
     connection = loop.create_unix_connection(lambda: sample_reader, args.tx)
 
