@@ -179,8 +179,8 @@ def parse():
     if args.device_index is not None and args.device_index < 0:
         parser.error("Device index can't be negative")
 
-    if not args.ip_list:
-        args.ip_list.append('224.0.0.57:45300')
+#    if not args.ip_list:
+#        args.ip_list.append('224.0.0.57:45300')
 
     if args.rx and len(args.ip_list) > 1:
         parser.error('Receiver must have only a single channel (IP)')

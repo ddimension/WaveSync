@@ -1,7 +1,9 @@
 import threading
+from multiprocessing import Process
 import time
 import http.server as SimpleHTTPServer
 import socketserver as SocketServer
+import ipaddress
 
 class WebServerHandler(
         SimpleHTTPServer.SimpleHTTPRequestHandler
@@ -15,6 +17,11 @@ class WebServerHandler(
         address, port = channel.split(':')
         if address is None:
             return self.do_fail(b'Invalid channel address.')
+
+        try:
+            ipaddress.ip_address(address)
+        except ValueError:
+            return self.do_fail(b'Failed to parse address.')
 
         if int(port)<1:
             return self.do_fail(b'Invalid channel port.')
@@ -33,10 +40,10 @@ class WebServerHandler(
         self.end_headers()
 
         if action == "add":
-            self.wfile.write(b"Added the channel")
+            self.wfile.write(b"Added the channel\n")
             print("http api: added a new channel %s:%s" %(address,port))
         elif action == "remove":
-            self.wfile.write(b"Remove the channel")
+            self.wfile.write(b"Remove the channel\n")
             print("http api: remove a channel %s:%s" %(address,port))
 
     def do_list(self):
@@ -55,7 +62,8 @@ class WebServerHandler(
         self.send_header('Content-type','text/plain')
         self.end_headers()
         self.wfile.write(error)
-        print("http api: error message: "+error)
+        self.wfile.write(b"\n")
+        print("http api: error message: %s " % (error))
 
 
     def do_GET(self):
