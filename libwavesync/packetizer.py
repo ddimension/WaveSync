@@ -42,17 +42,29 @@ class Packetizer:
                              ttl)
 
         for address, port in channels:
-            if source_address and ipaddress.IPv4Address(address).is_multicast:
+
+            local_source_address = self.source_address
+            if local_source_address is None:
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                try:
+                    s.connect((address, port))
+                    local_source_address = s.getsockname()[0]
+                except:
+                    pass
+                finally:
+                    s.close()
+
+            if local_source_address is not None and ipaddress.IPv4Address(address).is_multicast:
                 try:
                     self.sock.setsockopt(socket.SOL_IP,
                                          socket.IP_MULTICAST_IF,
-                                         socket.inet_aton(source_address))
-                    print("added membership, interface source address: %s, group: %s" % (source_address, address))
+                                         socket.inet_aton(local_source_address))
+                    print("added membership, interface source address: %s, group: %s" % (local_source_address, address))
                     self.sock.setsockopt(socket.SOL_IP,
                                          socket.IP_ADD_MEMBERSHIP,
-                                         socket.inet_aton(address) + socket.inet_aton(source_address))
+                                         socket.inet_aton(address) + socket.inet_aton(local_source_address))
                 except:
-                    print("failed to add membership, interface source address: %s, group: %s. This is ok for unicast." % (source_address, address))
+                    print("failed to add membership, interface source address: %s, group: %s. This is ok for unicast." % (local_source_address, address))
 
         if multicast_loop is True:
             self.sock.setsockopt(socket.IPPROTO_IP,
